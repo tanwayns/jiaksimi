@@ -1,0 +1,6 @@
+{
+  "name": "Savor - Singapore & Malaysia Culinary Discovery",
+  "description": "Sensory-driven culinary discovery and geospatial exploration across Singapore & Malaysia, pairing high-utility mapping with Straits gastronomy, AI taste matching, and instant reservations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
