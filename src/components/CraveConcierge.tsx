@@ -78,13 +78,13 @@ export const CraveConcierge: React.FC<CraveConciergeProps> = ({
         <div className="relative z-10 space-y-2">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FF6E40]/20 border border-[#FF6E40]/40 text-[#FF6E40] text-xs font-bold">
             <Sparkles size={13} />
-            <span>AI Palate Concierge</span>
+            <span>吃什么！· AI Palate Concierge</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            What are you craving right now?
+            今晚吃什么？What are you craving?
           </h1>
           <p className="text-sm text-[#dfe2ed] max-w-xl leading-relaxed">
-            Specify your sensory mood. Savor's culinary engine computes textural, thermal, and flavor harmonies to construct your ideal tasting night.
+            Can't decide what to eat in Singapore & Malaysia? Select your sensory mood and flavor craving below. Our Straits AI engine computes textural, thermal, and spice harmonies to match your exact appetite.
           </p>
         </div>
       </div>

@@ -31,6 +31,7 @@ import { ProfileScreen } from './components/ProfileScreen';
 import { FilterModal } from './components/FilterModal';
 import { ReservationSuccessModal } from './components/ReservationSuccessModal';
 import { ApiHealthModal } from './components/ApiHealthModal';
+import { EatWhatDecider } from './components/EatWhatDecider';
 
 import { 
   RESTAURANTS_DATA, 
@@ -402,6 +403,13 @@ export default function App() {
                 <span>{locationNotice}</span>
               </div>
             )}
+
+            {/* "吃什么！" Brand Decider & Logo Feature Banner */}
+            <EatWhatDecider
+              onSelectDishQuery={(query) => {
+                setFilters((f) => ({ ...f, searchQuery: query }));
+              }}
+            />
 
             {/* Quick Food Craving Chips (Finding specific foods at location) */}
             <div className="space-y-1.5">
