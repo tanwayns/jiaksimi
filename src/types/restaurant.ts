@@ -1,5 +1,7 @@
 export type PriceLevel = '$' | '$$' | '$$$' | '$$$$';
 
+export type VenueType = 'hawker' | 'foodcourt' | 'restaurant' | 'cafe' | 'zichar' | 'supper' | 'dessert';
+
 export interface MenuItem {
   id: string;
   name: string;
@@ -46,6 +48,9 @@ export interface Restaurant {
   heroImage: string;
   gallery: string[];
   category: string;
+  venueType?: VenueType;
+  foodCentreName?: string;
+  stallNumber?: string;
   vibes: string[];
   dietary: string[];
   hasOutdoor: boolean;
@@ -85,6 +90,7 @@ export type SortOption = 'nearest' | 'match' | 'rating' | 'price';
 export interface FilterState {
   searchQuery: string;
   category: string;
+  venueType: string;
   priceLevels: PriceLevel[];
   minRating: number;
   minMatchScore: number;

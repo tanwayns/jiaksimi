@@ -49,6 +49,12 @@ export default function handler(req, res) {
         documentation: 'https://apidocs.geoapify.com/docs/places/?utm_source=chatgpt.com',
         apiKeyConfigured: Boolean(process.env.GEOAPIFY_API_KEY)
       },
+      geolocation_and_mapping: {
+        status: 'operational',
+        description: 'High-accuracy live GPS detection and OpenStreetMap Leaflet mapping (zero API key required)',
+        provider: 'Browser Geolocation API & OpenStreetMap Leaflet',
+        apiKeyRequired: false
+      },
       search_api: {
         status: 'operational',
         description: 'Real-time multi-attribute query engine with distance & rating rankers'

@@ -36,7 +36,8 @@ import { EatWhatDecider } from './components/EatWhatDecider';
 import { 
   RESTAURANTS_DATA, 
   INITIAL_USER_PROFILE, 
-  TASTING_GUIDES 
+  TASTING_GUIDES,
+  TastingGuide 
 } from './data/restaurants';
 import { Restaurant, Reservation, FilterState, SortOption } from './types/restaurant';
 import { 
@@ -46,8 +47,24 @@ import {
   calculateDistance, 
   formatDistance, 
   formatTravelTime, 
-  requestBrowserLocation 
+  requestBrowserLocation,
+  reverseGeocodeWithoutApiKey 
 } from './utils/geo';
+
+const DEFAULT_FILTERS: FilterState = {
+  searchQuery: '',
+  category: 'all',
+  venueType: 'all',
+  priceLevels: [],
+  minRating: 0,
+  minMatchScore: 0,
+  openNowOnly: false,
+  outdoorSeatingOnly: false,
+  michelinOnly: false,
+  selectedVibe: 'all',
+  maxDistanceKm: 0, // 0 for any distance
+  sortBy: 'nearest' // Default to nearest food spots
+};
 
 export default function App() {
   // Navigation & Screen State
@@ -68,7 +85,7 @@ export default function App() {
   const [confirmedReservation, setConfirmedReservation] = useState<Reservation | null>(null);
 
   // Saved Bookmarks
-  const [savedIds, setSavedIds] = useState<string[]>(['sg-1', 'sg-2', 'my-1']);
+  const [savedIds, setSavedIds] = useState<string[]>(['sg-hawker-1', 'sg-zichar-1', 'sg-1']);
 
   // Active Reservations
   const [reservations, setReservations] = useState<Reservation[]>([
@@ -88,54 +105,57 @@ export default function App() {
   ]);
 
   // Filters State with distance radius & sorting
-  const [filters, setFilters] = useState<FilterState>({
-    searchQuery: '',
-    category: 'all',
-    priceLevels: [],
-    minRating: 0,
-    minMatchScore: 0,
-    openNowOnly: false,
-    outdoorSeatingOnly: false,
-    michelinOnly: false,
-    selectedVibe: 'all',
-    maxDistanceKm: 0, // 0 for any distance
-    sortBy: 'nearest' // Default to nearest food spots
-  });
+  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
 
-  // Food tags for 1-tap food search
+  // Food tags for 1-tap food search across all culinary types
   const quickFoodChips = [
-    { label: 'All Foods', query: '' },
-    { label: '🦀 Chili Crab', query: 'chili crab' },
-    { label: '🥢 Wok Hei Hor Fun', query: 'hor fun' },
-    { label: '🥩 Wagyu Satay', query: 'satay' },
-    { label: '🍜 Katong Laksa', query: 'laksa' },
+    { label: 'All Foods (全部)', query: '' },
     { label: '🍗 Chicken Rice', query: 'chicken rice' },
-    { label: '🌺 Buah Keluak', query: 'buah keluak' },
-    { label: '☕ Kaya Toast', query: 'kaya toast' },
-    { label: '🦐 Kelong Seafood', query: 'seabass' },
-    { label: '🍷 Natural Wine', query: 'natural wine' }
+    { label: '🍜 Katong Laksa', query: 'laksa' },
+    { label: '🥢 Hokkien Mee', query: 'hokkien mee' },
+    { label: '🍢 Charcoal Satay', query: 'satay' },
+    { label: '🦀 Chili Crab', query: 'chili crab' },
+    { label: '🍳 Roti Prata', query: 'prata' },
+    { label: '☕ Kaya Toast & Kopi', query: 'kaya' },
+    { label: '🥟 Dim Sum & Bao', query: 'dim sum' },
+    { label: '🔥 Moonlight Hor Fun', query: 'hor fun' },
+    { label: '🍲 Ban Mian & Fishball', query: 'ban mian' },
+    { label: '🍧 Durian & Mango Sago', query: 'sago' },
+    { label: '🥩 Wagyu Beef', query: 'wagyu' }
   ];
 
-  // Geolocation trigger: detect user's current GPS location
+  // Geolocation trigger: detect user's current GPS location with FREE reverse geocoding (no API key)
   const handleUseCurrentLocation = async () => {
     setIsLocating(true);
     setLocationNotice(null);
     try {
       const { coords, accuracy } = await requestBrowserLocation();
+      let locationTitle = `Current GPS Location (±${Math.round(accuracy)}m)`;
+
+      // Fast, free open reverse geocoding without any Google Maps key
+      try {
+        const resolvedName = await reverseGeocodeWithoutApiKey(coords.lat, coords.lng);
+        if (resolvedName) {
+          locationTitle = resolvedName;
+        }
+      } catch (e) {
+        console.debug('Reverse geocoding fallback note:', e);
+      }
+
       setUserLocation({
         coords,
-        name: `Current GPS Location (±${Math.round(accuracy)}m)`,
+        name: locationTitle,
         isLiveGps: true,
         accuracyMeters: Math.round(accuracy),
         timestamp: Date.now()
       });
-      setCurrentCity(`GPS: ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`);
+      setCurrentCity(locationTitle.length > 36 ? `${locationTitle.slice(0, 33)}...` : locationTitle);
       setFilters(prev => ({ ...prev, sortBy: 'nearest' }));
-      setLocationNotice(`Live location acquired (accuracy ±${Math.round(accuracy)}m). Sorted by closest to you.`);
+      setLocationNotice(`Live location detected (${locationTitle}). Sorted by closest foods to you.`);
       setTimeout(() => setLocationNotice(null), 5000);
     } catch (err: any) {
       console.warn('Geolocation detection failed or was dismissed:', err);
-      setLocationNotice('GPS access unavailable. Switched to Telok Ayer Central Hub.');
+      setLocationNotice('GPS permission unavailable. Set to Maxwell / Chinatown Central Hub.');
       setTimeout(() => setLocationNotice(null), 4000);
     } finally {
       setIsLocating(false);
@@ -156,8 +176,8 @@ export default function App() {
   };
 
   // Toggle Bookmark
-  const handleToggleSave = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleToggleSave = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     setSavedIds((prev) => 
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
     );
@@ -204,7 +224,7 @@ export default function App() {
   // Filter & Rank restaurants
   const filteredRestaurants = useMemo(() => {
     const list = restaurantsWithDistances.filter((r) => {
-      // Food & Keyword Search query (matches restaurant name, cuisine, tagline, dishes, foods, vibes)
+      // Food & Keyword Search query (matches food name, cuisine, stall, dishes, food courts, vibes)
       if (filters.searchQuery) {
         const query = filters.searchQuery.toLowerCase().trim();
         const matchesName = r.name.toLowerCase().includes(query);
@@ -212,6 +232,8 @@ export default function App() {
         const matchesTagline = r.tagline.toLowerCase().includes(query);
         const matchesVibes = r.vibes.some((v) => v.toLowerCase().includes(query));
         const matchesNeighborhood = r.neighborhood.toLowerCase().includes(query);
+        const matchesFoodCentre = r.foodCentreName?.toLowerCase().includes(query);
+        const matchesStall = r.stallNumber?.toLowerCase().includes(query);
         const matchesPopularDishes = r.popularDishes?.some((d) => d.toLowerCase().includes(query));
         const matchesMenuItems = r.menuHighlights.some(
           (m) => m.name.toLowerCase().includes(query) || m.description.toLowerCase().includes(query)
@@ -223,6 +245,8 @@ export default function App() {
           !matchesTagline && 
           !matchesVibes && 
           !matchesNeighborhood && 
+          !matchesFoodCentre &&
+          !matchesStall &&
           !matchesPopularDishes && 
           !matchesMenuItems
         ) {
@@ -230,9 +254,22 @@ export default function App() {
         }
       }
 
+      // Venue Type filter (Hawker, Food Court, Restaurant, Zi Char, Cafe, Supper)
+      if (filters.venueType && filters.venueType !== 'all') {
+        if (filters.venueType === 'hawker' && r.venueType !== 'hawker' && r.category !== 'hawker') return false;
+        if (filters.venueType === 'foodcourt' && r.venueType !== 'foodcourt' && r.category !== 'foodcourt') return false;
+        if (filters.venueType === 'restaurant' && r.venueType === 'hawker') return false;
+        if (filters.venueType === 'zichar' && r.venueType !== 'zichar' && r.category !== 'wokhei') return false;
+        if (filters.venueType === 'cafe' && r.venueType !== 'cafe' && r.category !== 'cafe') return false;
+        if (filters.venueType === 'supper' && r.venueType !== 'supper' && r.category !== 'supper') return false;
+        if (filters.venueType === 'dessert' && r.venueType !== 'dessert' && r.category !== 'dessert') return false;
+      }
+
       // Specialty category
-      if (filters.category !== 'all' && r.category !== filters.category) {
-        return false;
+      if (filters.category !== 'all') {
+        const cat = filters.category;
+        const matchesCat = r.category === cat || r.venueType === cat || (cat === 'zichar' && r.category === 'wokhei');
+        if (!matchesCat) return false;
       }
 
       // Distance radius filter (Find food within X km of current location)
@@ -292,22 +329,25 @@ export default function App() {
     return restaurantsWithDistances.filter((r) => savedIds.includes(r.id));
   }, [restaurantsWithDistances, savedIds]);
 
-  // Categories for horizontal chips
+  // Categories for horizontal chips covering all foods (hawker, foodcourt, restaurant, etc.)
   const categoryChips = [
-    { id: 'all', label: 'All Specialties' },
-    { id: 'peranakan', label: '🌺 Modern Peranakan' },
-    { id: 'wokhei', label: '🥢 Wok Hei & Zi Char' },
-    { id: 'grill', label: '🥩 Charcoal Satay & Hearth' },
+    { id: 'all', label: 'All Foods (全部美食)' },
+    { id: 'hawker', label: '🍢 Hawker Stalls (小贩中心)' },
+    { id: 'foodcourt', label: '🍲 Food Courts & Kopitiams (食阁/咖啡店)' },
+    { id: 'restaurant', label: '🍽️ Restaurants (餐厅/酒楼)' },
+    { id: 'zichar', label: '🔥 Zi Char & Wok Hei (煮炒/海鲜)' },
+    { id: 'cafe', label: '☕ Cafes & Bakeries (咖啡/烘焙)' },
+    { id: 'supper', label: '🌙 Late Night Supper (深夜食堂)' },
+    { id: 'dessert', label: '🍧 Desserts (甜品)' },
+    { id: 'peranakan', label: '🌺 Peranakan & Straits' },
     { id: 'seafood', label: '🦀 Kelong Seafood & Crab' },
-    { id: 'spice', label: '🌶️ Modern Spice Atelier' },
-    { id: 'wine', label: '🍷 Shophouse Natural Wine' },
-    { id: 'cafe', label: '☕ Heritage Kopitiam & Roasters' },
   ];
 
   // Number of active filters
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (filters.category !== 'all') count++;
+    if (filters.venueType !== 'all') count++;
     if (filters.priceLevels.length > 0) count++;
     if (filters.minRating > 0) count++;
     if (filters.openNowOnly) count++;
@@ -551,11 +591,11 @@ export default function App() {
                     selectedRestaurant={selectedRestaurant || filteredRestaurants[0]}
                     onSelectRestaurant={(r) => setSelectedRestaurant(r)}
                     onOpenDetails={handleOpenDetails}
-                    onQuickBook={handleQuickBook}
                     savedIds={savedIds}
-                    onToggleSave={handleToggleSave}
+                    onToggleSave={(id) => handleToggleSave(id)}
                     userLocation={userLocation}
-                    onCenterUserLocation={handleUseCurrentLocation}
+                    onTriggerLocation={handleUseCurrentLocation}
+                    isLocating={isLocating}
                   />
                 </div>
               </div>
@@ -632,7 +672,7 @@ export default function App() {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      {TASTING_GUIDES.map((guide) => (
+                      {TASTING_GUIDES.map((guide: TastingGuide) => (
                         <div
                           key={guide.id}
                           className="group cursor-pointer bg-white rounded-2xl border border-[#EFE9E0] overflow-hidden shadow-xs hover:shadow-md hover:border-[#FF6E40]/40 transition-all flex flex-col justify-between"
@@ -700,19 +740,7 @@ export default function App() {
                         Try expanding your distance radius or search for popular foods like Laksa, Chili Crab, Hor Fun, Satay, or Kaya Toast.
                       </p>
                       <button
-                        onClick={() => setFilters({
-                          searchQuery: '',
-                          category: 'all',
-                          priceLevels: [],
-                          minRating: 0,
-                          minMatchScore: 0,
-                          openNowOnly: false,
-                          outdoorSeatingOnly: false,
-                          michelinOnly: false,
-                          selectedVibe: 'all',
-                          maxDistanceKm: 0,
-                          sortBy: 'nearest'
-                        })}
+                        onClick={() => setFilters(DEFAULT_FILTERS)}
                         className="px-4 py-2 rounded-full bg-[#F4511E] text-white text-xs font-bold shadow-sm"
                       >
                         Reset All Filters
@@ -740,17 +768,19 @@ export default function App() {
 
         {/* TAB 2: INTERACTIVE MAP SCREEN */}
         {activeTab === 'map' && (
-          <InteractiveMap
-            restaurants={filteredRestaurants}
-            selectedRestaurant={selectedRestaurant || filteredRestaurants[0]}
-            onSelectRestaurant={(r) => setSelectedRestaurant(r)}
-            onOpenDetails={handleOpenDetails}
-            onQuickBook={handleQuickBook}
-            savedIds={savedIds}
-            onToggleSave={handleToggleSave}
-            userLocation={userLocation}
-            onCenterUserLocation={handleUseCurrentLocation}
-          />
+          <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
+            <InteractiveMap
+              restaurants={filteredRestaurants}
+              selectedRestaurant={selectedRestaurant || filteredRestaurants[0]}
+              onSelectRestaurant={(r) => setSelectedRestaurant(r)}
+              onOpenDetails={handleOpenDetails}
+              savedIds={savedIds}
+              onToggleSave={handleToggleSave}
+              userLocation={userLocation}
+              onTriggerLocation={handleUseCurrentLocation}
+              isLocating={isLocating}
+            />
+          </div>
         )}
 
         {/* TAB 3: CRAVE AI CONCIERGE SCREEN */}
@@ -806,19 +836,7 @@ export default function App() {
         onClose={() => setIsFilterModalOpen(false)}
         filters={filters}
         onUpdateFilters={setFilters}
-        onResetFilters={() => setFilters({
-          searchQuery: '',
-          category: 'all',
-          priceLevels: [],
-          minRating: 0,
-          minMatchScore: 0,
-          openNowOnly: false,
-          outdoorSeatingOnly: false,
-          michelinOnly: false,
-          selectedVibe: 'all',
-          maxDistanceKm: 0,
-          sortBy: 'nearest'
-        })}
+        onResetFilters={() => setFilters(DEFAULT_FILTERS)}
       />
 
       {/* API Health Monitor Modal */}

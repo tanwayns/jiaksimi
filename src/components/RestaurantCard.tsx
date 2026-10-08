@@ -92,6 +92,50 @@ export const RestaurantCard: React.FC<RestaurantCardProps> = ({
           {/* Title and Rating Row */}
           <div className="flex items-start justify-between gap-2">
             <div>
+              {/* Venue Type Badge */}
+              <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                {restaurant.venueType === 'hawker' && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#FFEDD5] text-[#C2410C] border border-[#FDBA74]">
+                    🍢 Hawker Stall {restaurant.stallNumber ? `· ${restaurant.stallNumber}` : ''}
+                  </span>
+                )}
+                {restaurant.venueType === 'foodcourt' && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#D1FAE5] text-[#065F46] border border-[#6EE7B7]">
+                    🍲 Food Court & Kopitiam
+                  </span>
+                )}
+                {restaurant.venueType === 'zichar' && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#FEE2E2] text-[#991B1B] border border-[#FCA5A5]">
+                    🔥 Zi Char & Seafood Wok
+                  </span>
+                )}
+                {restaurant.venueType === 'cafe' && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#FEF3C7] text-[#92400E] border border-[#FCD34D]">
+                    ☕ Kopitiam & Bakery
+                  </span>
+                )}
+                {restaurant.venueType === 'supper' && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#EDE9FE] text-[#5B21B6] border border-[#C4B5FD]">
+                    🌙 Late Night Supper
+                  </span>
+                )}
+                {restaurant.venueType === 'dessert' && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#FCE7F3] text-[#9D174D] border border-[#FBCFE8]">
+                    🍧 Desserts & Tong Sui
+                  </span>
+                )}
+                {(!restaurant.venueType || restaurant.venueType === 'restaurant') && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#FBE9E7] text-[#C2410C] border border-[#FFCCBC]">
+                    🍽️ Restaurant
+                  </span>
+                )}
+                {restaurant.foodCentreName && (
+                  <span className="text-[11px] font-semibold text-[#8E929A] truncate max-w-[170px]">
+                    {restaurant.foodCentreName}
+                  </span>
+                )}
+              </div>
+
               <h3 className="text-[18px] font-bold text-[#181c23] tracking-tight group-hover:text-[#F4511E] transition-colors leading-snug">
                 {restaurant.name}
               </h3>

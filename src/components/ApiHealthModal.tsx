@@ -217,6 +217,27 @@ export const ApiHealthModal: React.FC<ApiHealthModalProps> = ({ isOpen, onClose 
 
               <div className="p-3 rounded-xl border border-[#EFE9E0] bg-white flex items-center justify-between hover:border-[#10B981]/40 transition-colors">
                 <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center">
+                    <MapPin size={14} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <h5 className="text-xs font-extrabold text-[#181c23]">GPS Location & OpenStreetMap</h5>
+                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-[#E0F2FE] text-[#0284C7]">
+                        Zero Key Required
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#60646C]">High-accuracy live GPS detection, Leaflet maps & local reverse geocoding</p>
+                  </div>
+                </div>
+                <span className="text-[11px] font-bold text-[#10B981] bg-[#ECFDF5] px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
+                  <span>Operational</span>
+                </span>
+              </div>
+
+              <div className="p-3 rounded-xl border border-[#EFE9E0] bg-white flex items-center justify-between hover:border-[#10B981]/40 transition-colors">
+                <div className="flex items-center gap-2.5">
                   <div className="w-7 h-7 rounded-lg bg-[#FBE9E7] text-[#F4511E] flex items-center justify-center">
                     <MapPin size={14} />
                   </div>

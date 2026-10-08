@@ -27,15 +27,27 @@ export const FilterModal: React.FC<FilterModalProps> = ({
     onUpdateFilters({ ...filters, priceLevels: updated });
   };
 
+  const venueTypes = [
+    { id: 'all', label: 'All Foods', icon: '✨' },
+    { id: 'hawker', label: '🍢 Hawker Stalls & Centers', icon: '🍢' },
+    { id: 'foodcourt', label: '🍲 Food Courts & Kopitiams', icon: '🍲' },
+    { id: 'restaurant', label: '🍽️ Restaurants & Bistros', icon: '🍽️' },
+    { id: 'zichar', label: '🔥 Zi Char & Seafood', icon: '🔥' },
+    { id: 'cafe', label: '☕ Cafes & Bakeries', icon: '☕' },
+    { id: 'supper', label: '🌙 Late Night Supper', icon: '🌙' },
+    { id: 'dessert', label: '🍧 Desserts & Drinks', icon: '🍧' },
+  ];
+
   const categories = [
     { id: 'all', label: 'All Specialties' },
+    { id: 'hawker', label: '🍢 Hawker Classics' },
+    { id: 'foodcourt', label: '🍲 Food Court Favourites' },
+    { id: 'zichar', label: '🥢 Wok Hei & Zi Char' },
     { id: 'peranakan', label: '🌺 Modern Peranakan' },
-    { id: 'wokhei', label: '🥢 Wok Hei & Zi Char' },
     { id: 'grill', label: '🥩 Charcoal Satay & Hearth' },
     { id: 'seafood', label: '🦀 Kelong Seafood & Crab' },
-    { id: 'spice', label: '🌶️ Modern Spice Atelier' },
-    { id: 'wine', label: '🍷 Shophouse Natural Wine' },
-    { id: 'cafe', label: '☕ Heritage Kopitiam & Roasters' },
+    { id: 'supper', label: '🌙 Late Night Supper' },
+    { id: 'cafe', label: '☕ Heritage Kopitiam' },
   ];
 
   const sortOptions: { id: SortOption; label: string; icon: string }[] = [
@@ -90,6 +102,32 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   >
                     <span>{opt.icon}</span>
                     <span>{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Food Venue Type (Hawker, Food Court, Restaurant, etc.) */}
+          <div>
+            <label className="block text-xs font-bold text-[#60646C] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <span>Food Venue Type (美食类型)</span>
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {venueTypes.map((vt) => {
+                const isSelected = (filters.venueType || 'all') === vt.id;
+                return (
+                  <button
+                    key={vt.id}
+                    onClick={() => onUpdateFilters({ ...filters, venueType: vt.id })}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all text-left flex items-center gap-1.5 ${
+                      isSelected
+                        ? 'border-[#F4511E] bg-[#FFF5F2] text-[#F4511E] shadow-2xs'
+                        : 'border-[#EFE9E0] text-[#2D3139] hover:bg-[#FDFBF7]'
+                    }`}
+                  >
+                    <span>{vt.icon}</span>
+                    <span className="truncate">{vt.label}</span>
                   </button>
                 );
               })}

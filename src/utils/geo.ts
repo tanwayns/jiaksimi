@@ -146,6 +146,99 @@ export function formatTravelTime(distanceKm: number): string {
 }
 
 /**
+ * Known Singapore & Malaysia District Landmarks for instant zero-latency offline reverse geocoding
+ */
+const KNOWN_LANDMARK_DISTRICTS: { name: string; lat: number; lng: number }[] = [
+  { name: 'Telok Ayer & Amoy St, Singapore', lat: 1.2801, lng: 103.8475 },
+  { name: 'Maxwell & Chinatown, Singapore', lat: 1.2804, lng: 103.8440 },
+  { name: 'Keong Saik & Outram Park, Singapore', lat: 1.2808, lng: 103.8423 },
+  { name: 'Tanjong Pagar & Anson, Singapore', lat: 1.2764, lng: 103.8458 },
+  { name: 'Marina Bay Sands & Bayfront, Singapore', lat: 1.2834, lng: 103.8607 },
+  { name: 'Raffles Place & CBD, Singapore', lat: 1.2840, lng: 103.8515 },
+  { name: 'Bugis & Kampong Glam, Singapore', lat: 1.3005, lng: 103.8588 },
+  { name: 'Orchard Road & Somerset, Singapore', lat: 1.3048, lng: 103.8318 },
+  { name: 'Tiong Bahru & Havelock, Singapore', lat: 1.2865, lng: 103.8306 },
+  { name: 'Newton & Novena, Singapore', lat: 1.3130, lng: 103.8375 },
+  { name: 'Old Airport Road & Mountbatten, Singapore', lat: 1.3082, lng: 103.8858 },
+  { name: 'Katong & East Coast Rd, Singapore', lat: 1.3068, lng: 103.9038 },
+  { name: 'Marine Parade & Joo Chiat, Singapore', lat: 1.3025, lng: 103.9060 },
+  { name: 'Little India & Farrer Park, Singapore', lat: 1.3115, lng: 103.8540 },
+  { name: 'Chomp Chomp & Serangoon Gardens, Singapore', lat: 1.3644, lng: 103.8665 },
+  { name: 'Bishan & Junction 8, Singapore', lat: 1.3508, lng: 103.8488 },
+  { name: 'Toa Payoh Central, Singapore', lat: 1.3325, lng: 103.8485 },
+  { name: 'Ang Mo Kio Central, Singapore', lat: 1.3691, lng: 103.8454 },
+  { name: 'Jurong East & JEM, Singapore', lat: 1.3331, lng: 103.7436 },
+  { name: 'Clementi Central, Singapore', lat: 1.3151, lng: 103.7650 },
+  { name: 'Woodlands Central, Singapore', lat: 1.4360, lng: 103.7865 },
+  { name: 'Tampines Regional Centre, Singapore', lat: 1.3532, lng: 103.9452 },
+  { name: 'Bedok Central, Singapore', lat: 1.3236, lng: 103.9273 },
+  { name: 'Changi Airport, Singapore', lat: 1.3644, lng: 103.9915 },
+  { name: 'Petaling St / Chinatown, Kuala Lumpur', lat: 3.1435, lng: 101.6982 },
+  { name: 'KLCC & Golden Triangle, Kuala Lumpur', lat: 3.1578, lng: 101.7119 },
+  { name: 'Bangsar Telawi, Kuala Lumpur', lat: 3.1319, lng: 101.6705 },
+  { name: 'George Town, Penang', lat: 5.4164, lng: 100.3392 },
+  { name: 'Tan Hiok Nee, Johor Bahru', lat: 1.4589, lng: 103.7635 },
+];
+
+/**
+ * Free Reverse Geocoder using OpenStreetMap Nominatim with zero API key.
+ * Gracefully falls back to nearest Singapore/Malaysia district landmark.
+ */
+export async function reverseGeocodeWithoutApiKey(lat: number, lng: number): Promise<string> {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2500);
+
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+      {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'JiakSimiFoodFinder/1.0'
+        },
+        signal: controller.signal
+      }
+    );
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.address) {
+        const addr = data.address;
+        const road = addr.road || addr.pedestrian || addr.footway || addr.suburb || addr.neighbourhood;
+        const sub = addr.suburb || addr.neighbourhood || addr.city_district || addr.quarter;
+        const city = addr.city || addr.town || addr.state || addr.country;
+        
+        const parts = [road, sub].filter(Boolean);
+        if (parts.length > 0) {
+          return `${parts.join(', ')} (${city || 'Singapore'})`;
+        }
+        if (data.display_name) {
+          const split = data.display_name.split(',');
+          return split.slice(0, 2).join(', ').trim();
+        }
+      }
+    }
+  } catch {
+    // Non-blocking fallback to local nearest district calculation below
+  }
+
+  // Fallback: Find nearest known landmark in SG/MY
+  let closestName = 'Current Location';
+  let minDistance = Infinity;
+
+  for (const hub of KNOWN_LANDMARK_DISTRICTS) {
+    const dist = calculateDistance(lat, lng, hub.lat, hub.lng);
+    if (dist < minDistance) {
+      minDistance = dist;
+      closestName = dist < 2.5 ? `Near ${hub.name}` : hub.name;
+    }
+  }
+
+  return closestName;
+}
+
+/**
  * Requests browser GPS position with high accuracy
  */
 export function requestBrowserLocation(): Promise<{ coords: Coordinates; accuracy: number }> {
